@@ -5,11 +5,11 @@ FILES += $(patsubst %.md, %.html, $(wildcard *.md))
 FILTERS =
 PDF_ENGINE =
 PDF_OPTIONS =
-PDF_FORMAT_OPTIONS = -t beamer --slide-level=2
+PDF_FORMAT_OPTIONS = -t beamer --slide-level=3
 
 FILTERS += --citeproc
 # FILTERS += -F pandoc-crossref
-PDF_ENGINE += --pdf-engine=xelatex
+PDF_ENGINE += --pdf-engine=lualatex
 PDF_OPTIONS += --number-sections
 
 REVEALJS_THEME = beige

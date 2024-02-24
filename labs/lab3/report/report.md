@@ -1,8 +1,8 @@
 ---
 ## Front matter
-title: "Шаблон отчёта по лабораторной работе"
-subtitle: "Простейший вариант"
-author: "Дмитрий Сергеевич Кулябов"
+title: "Отчет по лабораторной работе 2"
+subtitle: ""
+author: "Матюхин Григорий Васильевич"
 
 ## Generic otions
 lang: ru-RU
@@ -68,52 +68,151 @@ header-includes:
 
 # Цель работы
 
-Здесь приводится формулировка цели лабораторной работы. Формулировки
-цели для каждой лабораторной работы приведены в методических
-указаниях.
+Смоделировать изменение численностей армий во время боевых действий.
 
-Цель данного шаблона --- максимально упростить подготовку отчётов по
-лабораторным работам.  Модифицируя данный шаблон, студенты смогут без
-труда подготовить отчёт по лабораторным работам, а также познакомиться
-с основными возможностями разметки Markdown.
+## Постановка задачи
 
-# Задание
+Мой номер студенческого билета 1032211402, всего заданий 70, значит мой вариант 14.
 
-Здесь приводится описание задания в соответствии с рекомендациями
-методического пособия и выданным вариантом.
+Между страной $X$ и страной $Y$ идет война. Численность состава войск исчисляется от начала войны, и являются временными функциями $x(t)$ и $y(t)$. В начальный момент времени страна $X$ имеет армию численностью $200000$ человек, а в распоряжении страны $Y$ армия численностью в $119000$ человек. Для упрощения модели считаем, что коэффициенты $a,b,c,h$ постоянны. Также считаем $P(t)$ и $Q(t)$ непрерывные функции.
 
-# Теоретическое введение
+Постройте графики изменения численности войск армии $X$ и армии $Y$ для следующих случаев:
 
-Здесь описываются теоретические аспекты, связанные с выполнением работы.
+1. Модель боевых действий между регулярными войсками
+    $\frac{dx}{dt} = -0.5x(t) - 0.8y(t) + sin(t + 5) + 1$
+    $\frac{dy}{dt} = -0.7x(t) - 0.5y(t) + cos(t + 3) + 1$
 
-Например, в табл. [-@tbl:std-dir] приведено краткое описание стандартных каталогов Unix.
+2. Модель ведение боевых действий с участием регулярных войск и партизанских отрядов
+    $\frac{dx}{dt} = -0.5x(t) - 0.8y(t) + sin(10t)$
+    $\frac{dy}{dt} = -0.3x(t)y(t) - 0.5y(t) + cos(10t)$
 
-: Описание некоторых каталогов файловой системы GNU Linux {#tbl:std-dir}
+# Выполнение работы
 
-| Имя каталога | Описание каталога                                                                                                          |
-|--------------|----------------------------------------------------------------------------------------------------------------------------|
-| `/`          | Корневая директория, содержащая всю файловую                                                                               |
-| `/bin `      | Основные системные утилиты, необходимые как в однопользовательском режиме, так и при обычной работе всем пользователям     |
-| `/etc`       | Общесистемные конфигурационные файлы и файлы конфигурации установленных программ                                           |
-| `/home`      | Содержит домашние директории пользователей, которые, в свою очередь, содержат персональные настройки и данные пользователя |
-| `/media`     | Точки монтирования для сменных носителей                                                                                   |
-| `/root`      | Домашняя директория пользователя  `root`                                                                                   |
-| `/tmp`       | Временные файлы                                                                                                            |
-| `/usr`       | Вторичная иерархия для данных пользователя                                                                                 |
+В этой работе требуется найти решения двух систем дифференциальных уравнений, которые даны в задании.
 
-Более подробно про Unix см. в [@tanenbaum_book_modern-os_ru; @robbins_book_bash_en; @zarrelli_book_mastering-bash_en; @newham_book_learning-bash_en].
+## OpenModelica
 
-# Выполнение лабораторной работы
+### Модель без партизан
 
-Описываются проведённые действия, в качестве иллюстрации даётся ссылка на иллюстрацию (рис. [-@fig:001]).
+```
+model war
+  Real x(start=200000);
+  Real y(start=119000);
+equation
+  der(x) = -0.5*x - 0.8*y + sin(time +5) + 1;
+  der(y) = -0.7*x  - 0.5*y + cos(time + 5) + 1;
+  
+  if x<=0 then
+    terminate("X was defeated");
+  end if;
+  if y<=0 then
+    terminate("Y was defeated");
+  end if;
+end war;
+```
 
-![Название рисунка](image/placeimg_800_600_tech.jpg){#fig:001 width=70%}
+![war](../images/war.png)
 
-# Выводы
+### Модель с партизанами
 
-Здесь кратко описываются итоги проделанной работы.
+```
+model war_guerrilla
+  Real x(start=200000);
+  Real y(start=119000);
+equation
+  der(x) = -0.5*x - 0.8*y + sin(10*time);
+  der(y) = -0.3*x*y - 0.5*y + cos(10*time);
+  
+  if x<=0 then
+    terminate("X was defeated");
+  end if;
+  if y<=0 then
+    terminate("Y was defeated");
+  end if;
+end war_guerrilla;
+```
 
-# Список литературы{.unnumbered}
+![war_guerrilla](../images/war_guerrilla.png)
 
-::: {#refs}
-:::
+## Julia[^1]
+
+[^1]: В данной секции прведен только код связаный с постановкой задачи.
+
+### Модель без партизан
+
+```julia
+using DifferentialEquations, Plots
+
+# initial army sizes
+const u0 = [200000, 119000]
+
+t = (0, 10)
+
+function model_war(du, u0, p, t)
+  x = u0[1]
+  y = u0[2]
+  dx = -0.5*x - 0.8*y + sin(t + 5) + 1
+  dy = -0.7*x - 0.5*y + cos(t + 3) + 1
+  du[1] = dx
+  du[2] = dy
+end
+
+# Stop the model when one army size reaches zero
+condition1(u, t, integrator) = u[1]
+cb1 = ContinuousCallback(condition1, SciMLBase.terminate!)
+condition2(u, t, integrator) = u[2]
+cb2 = ContinuousCallback(condition2, SciMLBase.terminate!)
+
+cb = CallbackSet(
+  ContinuousCallback(condition1, SciMLBase.terminate!),
+  ContinuousCallback(condition2, SciMLBase.terminate!)
+)
+
+war_prob = ODEProblem(model_war, u0, t, callback=cb)
+war_sol = solve(war_prob, abstol=1e-15, dt=0.0001)
+```
+![regular_troops_only](../images/regular_troops_only.png)
+
+### Модель с партизанами
+
+```julia
+using DifferentialEquations, Plots
+
+# initial army sizes
+const u0 = [200000, 119000]
+
+t = (0, 10)
+
+function model_war_guerrilla(du, u0, p, t)
+  x = u0[1]
+  y = u0[2]
+  dx = -0.5*x - 0.8*y + sin(10*t)
+  dy = -0.3*x*y - 0.5*y + cos(10*t)
+  du[1] = dx
+  du[2] = dy
+end
+
+# Stop the model when one army size reaches zero
+condition1(u, t, integrator) = u[1]
+cb1 = ContinuousCallback(condition1, SciMLBase.terminate!)
+condition2(u, t, integrator) = u[2]
+cb2 = ContinuousCallback(condition2, SciMLBase.terminate!)
+
+cb = CallbackSet(
+  ContinuousCallback(condition1, SciMLBase.terminate!),
+  ContinuousCallback(condition2, SciMLBase.terminate!)
+)
+
+war_guerrilla_prob = ODEProblem(model_war_guerrilla, u0, t, callback=cb)
+war_guerrilla_sol = solve(war_guerrilla_prob, abstol=1e-15, dt=0.0001)
+```
+
+![mixed_regular_and_guerrilla_troops](../images/mixed_regular_and_guerrilla_troops.png)
+
+## Сравнение
+
+Как можно увидеть, результаты моелирования как при использовании OpenModelica, так и при использовании Julia идентичны.
+
+# Вывод
+
+В данной лабораторной работе мы реализовали модель потерь при велении войны.
