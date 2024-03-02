@@ -1,8 +1,8 @@
 ---
 ## Front matter
-title: "Шаблон отчёта по лабораторной работе"
-subtitle: "Простейший вариант"
-author: "Дмитрий Сергеевич Кулябов"
+title: "Отчет по лабораторной работе 3"
+subtitle: ""
+author: "Матюхин Григорий Васильевич"
 
 ## Generic otions
 lang: ru-RU
@@ -68,52 +68,140 @@ header-includes:
 
 # Цель работы
 
-Здесь приводится формулировка цели лабораторной работы. Формулировки
-цели для каждой лабораторной работы приведены в методических
-указаниях.
+Смоделировать гармонические колебания с различными условиями.
 
-Цель данного шаблона --- максимально упростить подготовку отчётов по
-лабораторным работам.  Модифицируя данный шаблон, студенты смогут без
-труда подготовить отчёт по лабораторным работам, а также познакомиться
-с основными возможностями разметки Markdown.
+## Постановка задачи
 
-# Задание
+Вариант 14:
+Постройте фазовый портрет гармонического осциллятора и решение уравнения гармонического осциллятора для следующих случаев:
 
-Здесь приводится описание задания в соответствии с рекомендациями
-методического пособия и выданным вариантом.
+1. Колебания гармонического осциллятора без затуханий и без действий внешней силы $\ddot x + 6x = 0$
 
-# Теоретическое введение
+2. Колебания гармонического осциллятора c затуханием и без действий внешней силы $\ddot x + 5 \dot x + 15x = 0$
 
-Здесь описываются теоретические аспекты, связанные с выполнением работы.
+3. Колебания гармонического осциллятора c затуханием и под действием внешней силы $\ddot x + 2 \dot x + 4x = \cos(3.5t)$
 
-Например, в табл. [-@tbl:std-dir] приведено краткое описание стандартных каталогов Unix.
+На интервале $t \in \left[0; 45\right]$;(шаг $0.05$) с начальными условиями $x_0 = 1,y_0 = 0$
 
-: Описание некоторых каталогов файловой системы GNU Linux {#tbl:std-dir}
+# Выполнение работы
 
-| Имя каталога | Описание каталога                                                                                                          |
-|--------------|----------------------------------------------------------------------------------------------------------------------------|
-| `/`          | Корневая директория, содержащая всю файловую                                                                               |
-| `/bin `      | Основные системные утилиты, необходимые как в однопользовательском режиме, так и при обычной работе всем пользователям     |
-| `/etc`       | Общесистемные конфигурационные файлы и файлы конфигурации установленных программ                                           |
-| `/home`      | Содержит домашние директории пользователей, которые, в свою очередь, содержат персональные настройки и данные пользователя |
-| `/media`     | Точки монтирования для сменных носителей                                                                                   |
-| `/root`      | Домашняя директория пользователя  `root`                                                                                   |
-| `/tmp`       | Временные файлы                                                                                                            |
-| `/usr`       | Вторичная иерархия для данных пользователя                                                                                 |
+В этой работе требуется найти решения уравнения производной второго порядка. Решать будет как систему из двух уравнений производной первого порядка.
 
-Более подробно про Unix см. в [@tanenbaum_book_modern-os_ru; @robbins_book_bash_en; @zarrelli_book_mastering-bash_en; @newham_book_learning-bash_en].
+# Julia
 
-# Выполнение лабораторной работы
+```julia
+using DifferentialEquations, Plots
 
-Описываются проведённые действия, в качестве иллюстрации даётся ссылка на иллюстрацию (рис. [-@fig:001]).
+const u0 = [1, 0]
+const tspan = (0, 45)
+const dt = 0.05
 
-![Название рисунка](image/placeimg_800_600_tech.jpg){#fig:001 width=70%}
+function oscillation(title, g, w2, f)
+  function _oscillation!(du, u, p, t)
+    x = u[1]
+    dx = u[2]
+    du[1] = dx
+    du[2] = - g * dx - w2 * x - f(t)
+  end
 
-# Выводы
+  prob = ODEProblem(_oscillation!, u0, tspan,)
+  sol = solve(prob, Tsit5(), dt=dt)
 
-Здесь кратко описываются итоги проделанной работы.
+  plt = plot(sol, title=string(title, " pendulum"))
+  savefig(plt, lowercase(string(replace(title, " "=>"_"), "_pendulum.png")))
 
-# Список литературы{.unnumbered}
+  _prob = ODEProblem(prob.f, u0, tspan)
+  _sol = solve(_prob, Vern9())
 
-::: {#refs}
-:::
+  _plt = plot(_sol, vars = (1,2), title=string(title, " phase space"))
+  savefig(_plt, lowercase(string(replace(title, " "=>"_"), "_phase.png")))
+end
+
+f(t) = 0
+oscillation("Simple", 0, 6, f)
+
+oscillation("Fading", 5, 15, f)
+
+f(t) = cos(3.5 * t)
+oscillation("Force Fading", 2, 4, f)
+```
+
+Приведенный выше код решит все три подзадачи сразу.
+
+## Результаты
+
+### 1
+
+![Julia Simple Pendulum](../images/simple_pendulum.jl.png)
+
+![Julia Simple Phase](../images/simple_phase.jl.png)
+
+### 2
+
+![Julia Fading Pendulum](../images/fading_pendulum.jl.png)
+
+![Julia Fading Phase](../images/fading_phase.jl.png)
+
+### 3
+
+![Julia Force Fading Pendulum](../images/force_fading_pendulum.jl.png)
+
+![Julia Force Fading Phase](../images/force_fading_phase.jl.png)
+
+# OpenModelica
+
+```
+model oscillation
+  Real x(start = 1);
+  Real dx(start = 0);
+  parameter Real g = 0;
+  parameter Real w2 = 6;
+equation
+  der(x) = dx;
+  der(dx)= - g * dx - w2 * x;
+end oscillation;
+```
+
+Приведенный выше код решит первые две подзадачи.
+
+Чтобы решить третью подзадачу, необходимо добавить еще одно слагаемое в формулу.
+
+```
+model oscillation
+  Real x(start = 1);
+  Real dx(start = 0);
+  parameter Real g = 0;
+  parameter Real w2 = 6;
+equation
+  der(x) = dx;
+  der(dx)= - g * dx - w2 * x - cos(3.5 * time);
+end oscillation;
+```
+
+## Результаты
+
+### 1
+
+![OpenModelica Simple Pendulum](../images/simple_pendulum.om.png)
+
+![OpenModelica Simple Phase](../images/simple_phase.om.png)
+
+### 2
+
+![OpenModelica Fading Pendulum](../images/fading_pendulum.om.png)
+
+![OpenModelica Fading Phase](../images/fading_phase.om.png)
+
+### 3
+
+![OpenModelica Force Fading Pendulum](../images/force_fading_pendulum.om.png)
+
+![OpenModelica Force Fading Phase](../images/force_fading_phase.om.png)
+
+# Сравнение
+
+Как можно увидеть, результаты моелирования как при использовании OpenModelica, так и при использовании Julia идентичны. Однако Julia позволяет задать проблему в более общем виде, не смодтря на относительно большее количество написанного кода.
+
+# Вывод
+
+В данной лабораторной работе мы реализовали модель гармонических колебаний с различными условиями.
