@@ -1,0 +1,3 @@
+Max dn for Campaign: 79.65264 at 0.00
+Max dn for Word of mouth: 95087.81002 at 0.01
+Max dn for Both: 10513.98670 at 0.11
